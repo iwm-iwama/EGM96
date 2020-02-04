@@ -1,14 +1,14 @@
 #!ruby
 #coding:binary
 
-$VERSION = ["iwm20200202"]
+$VERSION = ["iwm20200203", "iwm20200202"]
 #-------------------------------------------------------------------------------
 # Ruby Script 'convert_WW15MGH.GRD_to_TSV.rb'
 #   Convert
 #       'WW15MGH.GRD' of the WGS 84 EGM96 15-Minute Geoid Height File,
 #         https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/ww15mgh.grd.z
 #   To
-#       'ww15mgh.grd.tsv' of TSV format.
+#       'ww15mgh.grd.tsv' of TSV format
 #
 # <<Environment>>
 #   This script executing needs 'Ruby'.
@@ -21,6 +21,12 @@ $VERSION = ["iwm20200202"]
 
 $IFN = "./WW15MGH.GRD"
 $OFN = "./ww15mgh.grd.tsv"
+
+#-------------------------------------------------------------------------------
+
+Signal.trap(:INT) do
+	exit
+end
 
 puts
 

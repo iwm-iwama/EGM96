@@ -1,7 +1,7 @@
 #!ruby
 #coding:utf-8
 
-$VERSION = ["iwm20200202", "iwm20040819"]
+$VERSION = ["iwm20200204", "iwm20200202", "iwm20040819"]
 #-------------------------------------------------------------------------------
 # Ruby Script 'intpt.rb'
 #   WGS 84 EGM96 15-Minute Calculator
@@ -39,17 +39,52 @@ $VERSION = ["iwm20200202", "iwm20040819"]
 #       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/input.dat
 #
 #       <<Example>> TSV format
-#               38.6281550	269.7791550
-#               -14.6212170	305.0211140
-#               -90.0000000	360.0000000
+#           Latitude	Longitude
+#           38.628155	269.779155
+#           -14.621217	305.021114
+#           -90.000000	360.000000
 #
 #   4.Test Output Data
 #       <<Example>> TSV format
-#               38.6281550	269.7791550	-31.628
-#               -14.6212170	305.0211140	-2.969
-#               -90.0000000	360.0000000	999999.000	Err
+#           Latitude	Longitude
+#           38.628155	269.779155	-31.628
+#           -14.621217	305.021114	-2.969
+#           -90.000000	360.000000	999999.000	Err
 #
 #-------------------------------------------------------------------------------
+
+$IFN = {
+	"Grid File"   => "ww15mgh.grd.tsv",
+	"Input File"  => "input.tsv"
+}
+
+$OFN = {
+	"Output File" => "outintpt.tsv"
+}
+
+#-------------------------------------------------------------------------------
+
+Signal.trap(:INT) do
+	exit
+end
+
+IWINDO    = 4
+NBDR      = IWINDO * 2  # 8
+NLON      = 1441 + NBDR # 1449
+NLON_NBDR = NLON - NBDR # 1441
+NLAT      = 721
+DLAT      = 0.25
+DLON      = 0.25
+
+$South = 0.0
+$North = 0.0
+$West  = 0.0
+$East  = 0.0
+$Dphi  = 0.0
+$Dlam  = 0.0
+
+$AryR  = []
+$HashH = {}
 
 def INTERP(dmin, phi, dla)
 	aryY  = []
@@ -59,13 +94,13 @@ def INTERP(dmin, phi, dla)
 	rearth = 6371000.0
 
 	f1 = dmin * 1000 * rho
-	f2 = $west - NBDR / 2 * $dlam
+	f2 = $West - NBDR / 2 * $Dlam
 
-	ilim = f1 / (rearth * $dlat)
-	jlim = f1 / (rearth * $dlon * Math.cos(($south + $dlat * NLAT / 2.0) / rho))
+	ilim = f1 / (rearth * DLAT)
+	jlim = f1 / (rearth * DLON * Math.cos(($South + DLAT * NLAT / 2.0) / rho))
 
-	ri = (phi - $south) / $dlat
-	rj = (dla - f2) / $dlon
+	ri = (phi - $South) / DLAT
+	rj = (dla - f2) / DLON
 
 	i6 = IFRAC(ri) - IWINDO / 2 + 1
 	i7 = IFRAC(rj) - IWINDO / 2 + 1
@@ -226,7 +261,7 @@ def GrdF_read(aGrdFn)
 			|s|
 			s.to_f
 		end
-			$south, $north, $west, $east, $dphi, $dlam = ary
+			$South, $North, $West, $East, $Dphi, $Dlam = ary
 		ary = []
 
 		#-----------------------------
@@ -295,147 +330,112 @@ def GrdF_read(aGrdFn)
 	print "\n\n"
 end
 
-#-------------------------------------------------------------------------------
-# Main
-#-------------------------------------------------------------------------------
-BgnTime = Time.new
+def main()
+	$BgnTime = Time.new
 
-$IFN = {
-	"Grid File"   => "ww15mgh.grd.tsv",
-	"Input File"  => "input.tsv"
-}
+	ARGV.each do
+		|s|
+		case s
+			when /^-g=/
+				$IFN["Grid File"] = s.split("=")[1]
 
-$OFN = {
-	"Output File" => "outintpt.tsv"
-}
+			when /^-i=/
+				$IFN["Input File"] = s.split("=")[1]
 
-ARGV.each do
-	|s|
-	case s
-		when /^-g=/
-			$IFN["Grid File"] = s.split("=")[1]
-
-		when /^-i=/
-			$IFN["Input File"] = s.split("=")[1]
-
-		when /^-o=/
-			$OFN["Output File"] = s.split("=")[1]
-	end
-end
-
-66.times{print "-"}
-puts
-printf(
-	"> %s -g=\"%s\" -i=\"%s\" -o=\"%s\"\n",
-	File.basename($0),
-	$IFN["Grid File"],
-	$IFN["Input File"],
-	$OFN["Output File"]
-)
-66.times{print "-"}
-puts
-
-iErr = 0
-
-# Input File, "ok" "NG"
-$IFN.each do
-	|key, value|
-	s = ""
-	if File.exist?(value)
-		s = "ok"
-	else
-		s = "NG"
-		iErr = 1
-	end
-	printf("[%s] %-11s : '%s'\n", s, key, value)
-end
-
-# Output File, All "ok"
-$OFN.each do
-	|key, value|
-	printf("[%s] %-11s : '%s'\n", "ok", key, value)
-end
-
-if iErr > 0
-	puts
-	puts "Exit on error."
-	puts
-	exit
-end
-puts
-
-#---------------
-# Array / Hash
-#---------------
-$AryR = []
-$HashH = {}
-
-#------
-# Int
-#------
-IWINDO    = 4
-NBDR      = IWINDO * 2  # 8
-NLON      = 1441 + NBDR # 1449
-NLON_NBDR = NLON - NBDR # 1441
-NLAT      = 721
-
-#--------
-# Float
-#--------
-$south = 0.0
-$north = 0.0
-$west  = 0.0
-$east  = 0.0
-$dphi  = 0.0
-$dlam  = 0.0
-$dlat  = 0.25
-$dlon  = 0.25
-
-#---------
-# String
-#---------
-xmin = -50
-xmax =  50
-rdx  =   2
-
-GrdF_read($IFN["Grid File"])
-
-62.times{print "-"}
-puts
-
-rtn = ""
-
-File.open($IFN["Input File"], "rb") do
-	|fs|
-	fs.each_line do
-		|ln|
-		ln.strip!
-		if ln.size > 0
-			ary = Line2Ary(ln).map do
-				|s|
-				s.to_f
-			end
-			flat, flon = ary
-
-			un = INTERP(12.0, flat, flon)
-
-			rtn << sprintf("%.7f\t%.7f\t%.3f", flat, flon, un)
-			rtn << "\tErr" if un.abs == 999999.0
-			rtn << "\n"
+			when /^-o=/
+				$OFN["Output File"] = s.split("=")[1]
 		end
 	end
+
+	66.times{print "-"}
+	puts
+	printf(
+		"> %s -g=\"%s\" -i=\"%s\" -o=\"%s\"\n",
+		File.basename($0),
+		$IFN["Grid File"],
+		$IFN["Input File"],
+		$OFN["Output File"]
+	)
+	66.times{print "-"}
+	puts
+
+	iErr = 0
+
+	# Input File, "ok" "NG"
+	$IFN.each do
+		|key, value|
+		s = ""
+		if File.exist?(value)
+			s = "ok"
+		else
+			s = "NG"
+			iErr = 1
+		end
+		printf("[%s] %-11s : '%s'\n", s, key, value)
+	end
+
+	# Output File, All "ok"
+	$OFN.each do
+		|key, value|
+		printf("[%s] %-11s : '%s'\n", "ok", key, value)
+	end
+
+	if iErr > 0
+		puts
+		puts "Exit on error."
+		puts
+		exit
+	end
+	puts
+
+	#---------
+	# String
+	#---------
+	xmin = -50
+	xmax =  50
+	rdx  =   2
+
+	GrdF_read($IFN["Grid File"])
+
+	62.times{print "-"}
+	puts
+
+	rtn = ""
+
+	File.open($IFN["Input File"], "rb") do
+		|fs|
+		fs.each_line do
+			|ln|
+			ln.strip!
+			if ln.size > 0
+				ary = Line2Ary(ln).map do
+					|s|
+					s.to_f
+				end
+				flat, flon = ary
+
+				un = INTERP(12.0, flat, flon)
+
+				rtn << sprintf("%.7f\t%.7f\t%.3f", flat, flon, un)
+				rtn << "\tErr" if un.abs == 999999.0
+				rtn << "\n"
+			end
+		end
+	end
+
+	File.open($OFN["Output File"], "wb") do
+		|fs|
+		fs.write rtn
+		print rtn
+	end
+
+	62.times{print "-"}
+	puts
+
+	printf("%.3fsec\n", Time.new - $BgnTime)
+	puts
 end
 
-File.open($OFN["Output File"], "wb") do
-	|fs|
-	fs.write rtn
-	print rtn
-end
+main()
 
-62.times{print "-"}
-puts
-
-printf("%.3fsec\n", Time.new - BgnTime)
-
-puts
 exit
