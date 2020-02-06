@@ -1,7 +1,7 @@
 #!ruby
 #coding:utf-8
 
-$VERSION = ["iwm20200205", "iwm20200202", "iwm20040819"]
+$VERSION = ["iwm20200206", "iwm20200202", "iwm20040819"]
 #-------------------------------------------------------------------------------
 # Ruby Script 'intpt.rb'
 #   WGS 84 EGM96 15-Minute Calculator
@@ -18,7 +18,7 @@ $VERSION = ["iwm20200205", "iwm20200202", "iwm20040819"]
 #
 #-------------------------------------------------------------------------------
 # This Ruby script, intpt.rb, was written based on a FORTRAN program, INTPT.F,
-#   and by Yoshiyuki Iwama(iwm-iwama), August, 2004 and Janualy, 2020.
+#   and by Yoshiyuki Iwama(iwm-iwama), August, 2004 and February, 2020.
 #
 # The program, INTPT.F, was provided by Professor Richard H. Rapp of The Ohio
 #   State University, December, 1996.
@@ -239,96 +239,84 @@ def HashKeyMake(i1, i2)
 end
 
 def Line2Ary(ln)
-	# TSV only, fast.
+	# TSV only
 	return ln.split("\t")
-
-	# Compatible with the 'WW15MGH.GRD' file, but, slow about 20 percent.
-	## return ln.split(/\s+/)
 end
 
-def GrdF_read(aGrdFn)
-	File.open(aGrdFn, "rb") do
-		|fs|
+def GrdF_read(grdFn)
+	puts "                   << Loading a Grid File >>                    "
+	puts "0%                            50%                           100%"
+	puts "+-----------------------------+-----------------------------+-  "
+	print "*"
 
-		# Header [0 .. 5]
-		# Data   [0 .. 1440]
-		ary = []
+	iArrow = 0
 
-		#---------
-		# Header
-		#---------
-		ln = fs.gets
-			ln.strip!
-		ary = Line2Ary(ln).map do
-			|s|
-			s.to_f
-		end
-			$South, $North, $West, $East, $Dphi, $Dlam = ary
-		ary = []
+	# Header [0 .. 5]
+	# Data   [0 .. 1440]
+	ary = []
 
-		#-----------------------------
-		# Data Array 1441 * Line 721
-		#-----------------------------
-		puts "                   << Loading a Grid File >>                    "
-		puts "0%                            50%                           100%"
-		puts "+-----------------------------+-----------------------------+-  "
-		print "*"
+	aryGrd = IO.binread(grdFn).split("\n")
 
-		iGrh = 0
-
-		j1 = NBDR / 2       # 4
-		j2 = NLON_NBDR - j1 # 1437
-		j3 = NLON - j1      # 1445
-
-		$HashH = {}
-		str = ""
-		i1 = 0
-		i2 = 0
-		while ln = fs.gets
-			ln.strip!
-			if ln.size > 0
-				str << ln << "\t"
-				#
-				# L181(Data=721) = L20 * 9 + L1
-				#
-				if (i1 += 1) >= 181
-					i1 = 0
-					ary = Line2Ary(str)
-					str = ""
-					#
-					# [5 .. 1445]
-					#
-					i3 = 1
-					while i3 <= NLON_NBDR
-						s = HashKeyMake(NLAT - i2, i3 + j1)
-							$HashH[s] = ary[i3 - 1]
-						i3 += 1
-					end
-					#
-					# [1 .. 4]
-					# [1446 .. 1449]
-					#
-					i3 = 1
-					while i3 <= j1
-						s = HashKeyMake(NLAT - i2, i3)
-							$HashH[s] = ary[j2 + i3 - 1]
-						s = HashKeyMake(NLAT - i2, i3 + j3)
-							$HashH[s] = ary[i3 - 1]
-						i3 += 1
-					end
-
-					if (iGrh += 1) == 12
-						iGrh = 0
-						print "=>\b"
-					end
-
-					ary = []
-
-					i2 += 1
-				end
-			end
-		end
+	#---------
+	# Header
+	#---------
+	cnt = 0
+	ary = Line2Ary(aryGrd[cnt]).map do
+		|s|
+		s.to_f
 	end
+		$South, $North, $West, $East, $Dphi, $Dlam = ary
+	ary = []
+
+	#-----------------------------
+	# Data Array 1441 * Line 721
+	#-----------------------------
+	j1 = NBDR / 2       # 4
+	j2 = NLON_NBDR - j1 # 1437
+	j3 = NLON - j1      # 1445
+
+	$HashH = {}
+	str = ""
+	i2 = 0
+	cnt = 1
+	while cnt < aryGrd.size
+		#
+		# L181(Data=721) = L20 * 9 + L1
+		#
+		ary = Line2Ary(aryGrd[cnt])
+		#
+		# [5 .. 1445]
+		#
+		i3 = 1
+		while i3 <= NLON_NBDR
+			s = HashKeyMake(NLAT - i2, i3 + j1)
+				$HashH[s] = ary[i3 - 1]
+			i3 += 1
+		end
+		#
+		# [1 .. 4]
+		# [1446 .. 1449]
+		#
+		i3 = 1
+		while i3 <= j1
+			s = HashKeyMake(NLAT - i2, i3)
+				$HashH[s] = ary[j2 + i3 - 1]
+			s = HashKeyMake(NLAT - i2, i3 + j3)
+				$HashH[s] = ary[i3 - 1]
+			i3 += 1
+		end
+
+		if (iArrow += 1) == 12
+			iArrow = 0
+			print "=>\b"
+		end
+
+		ary = []
+		i2 += 1
+		cnt += 1
+	end
+
+	aryGrd = []
 	print "\n\n"
 end
 
