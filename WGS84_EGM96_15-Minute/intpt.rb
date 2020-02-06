@@ -406,7 +406,7 @@ def main()
 
 				un = INTERP(12.0, flat, flon)
 
-				rtn << sprintf("%.7f\t%.7f\t%.3f", flat, flon, un)
+				rtn << sprintf("%f\t%f\t%.3f", flat, flon, un)
 				rtn << "\tErr" if un.abs == 999999.0
 				rtn << "\n"
 			end
