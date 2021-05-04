@@ -1,7 +1,7 @@
 #!ruby
 #coding:utf-8
 
-$VERSION = ["iwm20200206", "iwm20200202", "iwm20040819"]
+$VERSION = ["iwm20210504", "iwm20200206", "iwm20200202", "iwm20040819"]
 #-------------------------------------------------------------------------------
 # Ruby Script 'intpt.rb'
 #   WGS 84 EGM96 15-Minute Calculator
@@ -55,11 +55,13 @@ $VERSION = ["iwm20200206", "iwm20200202", "iwm20040819"]
 
 $IFN = {
 	"Grid File"   => "ww15mgh.grd.tsv",
-	"Input File"  => "input.tsv"
+	## "Input File"  => "input.tsv"
+	"Input File"  => "input.dat"
 }
 
 $OFN = {
-	"Output File" => "outintpt.tsv"
+	## "Output File" => "outintpt.tsv"
+	"Output File" => "outintpt.dat"
 }
 
 #-------------------------------------------------------------------------------
@@ -239,14 +241,17 @@ def HashKeyMake(i1, i2)
 end
 
 def Line2Ary(ln)
-	# TSV only
-	return ln.split("\t")
+	# Space | TSV | CSV
+	return ln.strip.split(/\s+|,/)
 end
 
 def GrdF_read(grdFn)
+	print "\e[0;93m"
 	puts "                   << Loading a Grid File >>                    "
+	print "\e[0;96m"
 	puts "0%                            50%                           100%"
 	puts "+-----------------------------+-----------------------------+-  "
+	print "\e[0;95m"
 	print "*"
 
 	iArrow = 0
@@ -317,7 +322,9 @@ def GrdF_read(grdFn)
 	end
 
 	aryGrd = []
-	print "\n\n"
+
+	print "\e[0;99m"
+	print "\n"
 end
 
 def main()
@@ -387,6 +394,7 @@ def main()
 
 	GrdF_read($IFN["Grid File"])
 
+	print "\e[0;92m"
 	62.times{print "-"}
 	puts
 
@@ -406,8 +414,8 @@ def main()
 
 				un = INTERP(12.0, flat, flon)
 
-				rtn << sprintf("%f\t%f\t%.3f", flat, flon, un)
-				rtn << "\tErr" if un.abs == 999999.0
+				## rtn << sprintf("%.7f\t%.7f\t%.3f", flat, flon, un)
+				rtn << sprintf("%14.7f%14.7f%12.3f", flat, flon, un)
 				rtn << "\n"
 			end
 		end
@@ -420,6 +428,7 @@ def main()
 	end
 
 	62.times{print "-"}
+	print "\e[0;99m"
 	puts
 
 	printf("%.3fsec\n", Time.new - $BgnTime)
