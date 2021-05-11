@@ -1,7 +1,14 @@
 #!ruby
 #coding:utf-8
 
-$VERSION = ["iwm20210504", "iwm20200206", "iwm20200202", "iwm20040819"]
+$VERSION = "iwm20210511"
+# 履歴
+#  iwm20210511
+#  iwm20210504
+#  iwm20200206
+#  iwm20200202
+#  iwm20040819
+
 #-------------------------------------------------------------------------------
 # Ruby Script 'intpt.rb'
 #   WGS 84 EGM96 15-Minute Calculator
@@ -35,32 +42,29 @@ $VERSION = ["iwm20210504", "iwm20200206", "iwm20200202", "iwm20040819"]
 #   2.Geoid Height File
 #       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/ww15mgh.grd.z
 #
-#   3.Test Input Data
+#   3.Test Input Data (Fixed length | TSV | CSV)
 #       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/input.dat
 #
-#       <<Example>> TSV format
-#           Latitude	Longitude
-#           38.628155	269.779155
-#           -14.621217	305.021114
-#           -90.000000	360.000000
+#       <<Example>> Fixed length
+#           Latitude    Longitude
+#              38.628155  269.779155
+#             -14.621217  305.021114
+#             -90.000000  360.000000
 #
-#   4.Test Output Data
-#       <<Example>> TSV format
-#           Latitude	Longitude
-#           38.628155	269.779155	-31.628
-#           -14.621217	305.021114	-2.969
-#           -90.000000	360.000000	999999.000	Err
+#   4.Test Output Data (Fixed length)
+#           Latitude      Longitude
+#               38.6281550   269.7791550     -31.628
+#              -14.6212170   305.0211140      -2.969
+#              -90.0000000   360.0000000  999999.000
 #
 #-------------------------------------------------------------------------------
 
 $IFN = {
 	"Grid File"   => "ww15mgh.grd.tsv",
-	## "Input File"  => "input.tsv"
 	"Input File"  => "input.dat"
 }
 
 $OFN = {
-	## "Output File" => "outintpt.tsv"
 	"Output File" => "outintpt.dat"
 }
 
@@ -225,9 +229,7 @@ def SPLINE(x, aryY)
 				y2 = aryY[i1].to_f
 				r1 = $AryR[i1 + 1].to_f
 				r2 = $AryR[i1].to_f
-			rtn = y2 + i2 * (
-				(y1 - y2 - r2 / 3 - r1 / 6) + i2 * (r2 / 2 + i2 * (r1 - r2) / 6)
-			)
+			rtn = y2 + i2 * ((y1 - y2 - r2 / 3 - r1 / 6) + i2 * (r2 / 2 + i2 * (r1 - r2) / 6))
 	end
 	return rtn
 end
@@ -241,7 +243,7 @@ def HashKeyMake(i1, i2)
 end
 
 def Line2Ary(ln)
-	# Space | TSV | CSV
+	# Fixed length | TSV | CSV
 	return ln.strip.split(/\s+|,/)
 end
 
@@ -251,7 +253,7 @@ def GrdF_read(grdFn)
 	print "\e[0;96m"
 	puts "0%                            50%                           100%"
 	puts "+-----------------------------+-----------------------------+-  "
-	print "\e[0;95m"
+	print "\e[0;94m"
 	print "*"
 
 	iArrow = 0
@@ -344,6 +346,7 @@ def main()
 		end
 	end
 
+	print "\e[0;92m"
 	66.times{print "-"}
 	puts
 	printf(
@@ -354,6 +357,7 @@ def main()
 		$OFN["Output File"]
 	)
 	66.times{print "-"}
+	print "\e[0;99m"
 	puts
 
 	iErr = 0
