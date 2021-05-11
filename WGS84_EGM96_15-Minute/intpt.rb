@@ -2,7 +2,7 @@
 #coding:utf-8
 
 $VERSION = "iwm20210511"
-# 履歴
+# <<History>>
 #  iwm20210511
 #  iwm20210504
 #  iwm20200206
