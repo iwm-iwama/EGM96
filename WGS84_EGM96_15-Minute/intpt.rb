@@ -369,7 +369,7 @@ def main()
 		if File.exist?(value)
 			s = "ok"
 		else
-			s = "NG"
+			s = "\e[0;91mNG\e[0;99m"
 			iErr = 1
 		end
 		printf("[%s] %-11s : '%s'\n", s, key, value)
@@ -383,7 +383,7 @@ def main()
 
 	if iErr > 0
 		puts
-		puts "Exit on error."
+		puts "\e[0;91mExit on error.\e[0;99m"
 		puts
 		exit
 	end
