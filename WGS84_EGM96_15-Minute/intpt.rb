@@ -1,14 +1,25 @@
 #!ruby
 #coding:utf-8
 
-$VERSION = "iwm20210511"
+$VERSION = "iwm20210518"
 # <<History>>
-#  iwm20210511
-#  iwm20210504
-#  iwm20200206
-#  iwm20200202
-#  iwm20040819
+#   iwm20210518
+#   iwm20210511
+#   iwm20210504
+#   iwm20200206
+#   iwm20200202
+#   iwm20040819
 
+#-------------------------------------------------------------------------------
+# This Ruby script, intpt.rb, was written based on a FORTRAN program, INTPT.F,
+#   and by Yoshiyuki Iwama(iwm-iwama), August, 2004 and May, 2021.
+#
+# The program, INTPT.F, was provided by Professor Richard H. Rapp of The Ohio
+#   State University, December, 1996.
+#   It was put into its present form by the National Imagery and Mapping Agency
+#   (NIMA), December, 1996.
+#       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/egm96.html
+#
 #-------------------------------------------------------------------------------
 # Ruby Script 'intpt.rb'
 #   WGS 84 EGM96 15-Minute Calculator
@@ -21,17 +32,7 @@ $VERSION = "iwm20210511"
 #   > ruby intpt.rb
 #
 # <<Option example>>
-#   > ruby intpt.rb -g="ww15mgh.grd.tsv" -i="input.tsv" -o="outintpt.tsv"
-#
-#-------------------------------------------------------------------------------
-# This Ruby script, intpt.rb, was written based on a FORTRAN program, INTPT.F,
-#   and by Yoshiyuki Iwama(iwm-iwama), August, 2004 and February, 2020.
-#
-# The program, INTPT.F, was provided by Professor Richard H. Rapp of The Ohio
-#   State University, December, 1996.
-#   It was put into its present form by the National Imagery and Mapping Agency
-#   (NIMA), December, 1996.
-#       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/egm96.html
+#   > ruby intpt.rb -g="ww15mgh.grd.tsv" -i="input.dat" -o="outintpt.dat"
 #
 #-------------------------------------------------------------------------------
 # <<File Information>>
@@ -39,7 +40,7 @@ $VERSION = "iwm20210511"
 #   1.FORTRAN Program INTPT.F
 #       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/intpt.f
 #
-#   2.Geoid Height File
+#   2.Geoid Height File (Fixed length | TSV | CSV)
 #       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/ww15mgh.grd.z
 #
 #   3.Test Input Data (Fixed length | TSV | CSV)
@@ -51,7 +52,7 @@ $VERSION = "iwm20210511"
 #             -14.621217  305.021114
 #             -90.000000  360.000000
 #
-#   4.Test Output Data (Fixed length)
+#   4.Test Output Data (Fixed length Only)
 #           Latitude      Longitude
 #               38.6281550   269.7791550     -31.628
 #              -14.6212170   305.0211140      -2.969
@@ -68,8 +69,11 @@ $OFN = {
 	"Output File" => "outintpt.dat"
 }
 
+$LN66 = "------------------------------------------------------------------"
+
 #-------------------------------------------------------------------------------
 
+# Speed Up!!
 GC.disable
 
 Signal.trap(:INT) do
@@ -84,15 +88,54 @@ NLAT      = 721
 DLAT      = 0.25
 DLON      = 0.25
 
-$South = 0.0
-$North = 0.0
-$West  = 0.0
-$East  = 0.0
-$Dphi  = 0.0
-$Dlam  = 0.0
+$South    = 0.0
+$North    = 0.0
+$West     = 0.0
+$East     = 0.0
+$Dphi     = 0.0
+$Dlam     = 0.0
 
-$AryR  = []
-$HashH = {}
+$AryR     = []
+$HashH    = {}
+
+def HashKeyMake(i1, i2)
+	# [1..721]*10000 + [1..1449]
+	return (i1.to_i * 10000) + i2.to_i
+end
+
+def INITSP(aryY)
+	#-------------
+	# Initialize
+	#-------------
+	$AryR = Array.new((IWINDO + 1), 0.0)
+	aryQ  = Array.new((IWINDO + 1), 0.0)
+
+	#------------------
+	# [2..IWINDO - 1]
+	#------------------
+	i1 = 2
+	while i1 <= IWINDO - 1
+		i2 = aryQ[i1 - 1] / 2.0 + 2
+		aryQ[i1] = -0.5 / i2
+			y1 = aryY[i1 + 1].to_f
+			y2 = aryY[i1].to_f
+			y3 = aryY[i1 - 1].to_f
+		$AryR[i1] = (3 * (y1 - 2 * y2 + y3) - $AryR[i1 - 1] / 2.0) / i2
+		i1 += 1
+	end
+
+	#------------------
+	# Recalculation
+	# [2..IWINDO - 1]
+	#------------------
+	i1 = 2
+	while i1 <= (IWINDO - 1)
+		$AryR[i1] = aryQ[i1] * $AryR[i1 + 1] + $AryR[i1]
+		i1 += 1
+	end
+
+	aryQ = []
+end
 
 def INTERP(dmin, phi, dla)
 	aryY  = []
@@ -110,8 +153,8 @@ def INTERP(dmin, phi, dla)
 	ri = (phi - $South) / DLAT
 	rj = (dla - f2) / DLON
 
-	i6 = IFRAC(ri) - IWINDO / 2 + 1
-	i7 = IFRAC(rj) - IWINDO / 2 + 1
+	i6 = ri.floor - IWINDO / 2 + 1
+	i7 = rj.floor - IWINDO / 2 + 1
 	i8 = i6 + IWINDO - 1
 	i9 = i7 + IWINDO - 1
 
@@ -144,28 +187,26 @@ def INTERP(dmin, phi, dla)
 end
 
 def BILIN(ri, rj)
-	i1 = IFRAC(ri)
-	i2 = IFRAC(rj)
+	i1 = ri.floor
+	i2 = rj.floor
 
 	rn = ri - i1
 	re = rj - i2
 
-	case i1
-		when i1 < 1
-			i1 = 1
-			rn = 0.0
-		when i1 >= NLAT
-			i1 = NLAT - 1
-			rn = 1.0
+	if i1 < 1
+		i1 = 1
+		rn = 0.0
+	elsif i1 >= NLAT
+		i1 = NLAT - 1
+		rn = 1.0
 	end
 
-	case i2
-		when i2 < 1
-			i2 = 1
-			re = 0.0
-		when i2 >= NLON
-			i2 = NLON - 1
-			re = 1.0
+	if i2 < 1
+		i2 = 1
+		re = 0.0
+	elsif i2 >= NLON
+		i2 = NLON - 1
+		re = 1.0
 	end
 
 	rnm1 = 1 - rn
@@ -179,101 +220,42 @@ def BILIN(ri, rj)
 	return (rnm1 * rem1 * $HashH[s1]) + (rn * rem1 * $HashH[s2]) + (rnm1 * re * $HashH[s3]) + (rn * re * $HashH[s4])
 end
 
-def INITSP(aryY)
-	#-------------
-	# Initialize
-	#-------------
-	$AryR = [0.0] * (IWINDO + 1)
-	aryQ  = [0.0] * (IWINDO + 1)
-
-	#--------------------
-	# [2 .. IWINDO - 1]
-	#--------------------
-	i1 = 2
-	while i1 <= IWINDO - 1
-		i2 = aryQ[i1 - 1] / 2.0 + 2
-		aryQ[i1] = -0.5 / i2
-			y1 = aryY[i1 + 1].to_f
-			y2 = aryY[i1].to_f
-			y3 = aryY[i1 - 1].to_f
-		$AryR[i1] = (3 * (y1 - 2 * y2 + y3) - $AryR[i1 - 1] / 2.0) / i2
-		i1 += 1
-	end
-
-	#--------------------
-	# Recalculation
-	# [2 .. IWINDO - 1]
-	#--------------------
-	i1 = IWINDO - 1
-	while i1 >= 2
-		$AryR[i1] = aryQ[i1] * $AryR[i1 + 1] + $AryR[i1]
-		i1 -= 1
-	end
-
-	aryQ = []
-end
-
 def SPLINE(x, aryY)
 	rtn = 0
-	case x
-		when x < 1
-			rtn = aryY[1] + (
-				(x - 1) * (aryY[2] - aryY[1] - $AryR[2] / 6.0)
-			)
-		when x > IWINDO
-			rtn = aryY[IWINDO] + (x - IWINDO) * (aryY[IWINDO] - aryY[IWINDO - 1] + $AryR[IWINDO - 1] / 6.0)
-		else
-			i1 = IFRAC(x)
-			i2 = x - i1
-				y1 = aryY[i1 + 1].to_f
-				y2 = aryY[i1].to_f
-				r1 = $AryR[i1 + 1].to_f
-				r2 = $AryR[i1].to_f
-			rtn = y2 + i2 * ((y1 - y2 - r2 / 3 - r1 / 6) + i2 * (r2 / 2 + i2 * (r1 - r2) / 6))
+
+	if x < 1
+		rtn = aryY[1] + ((x - 1) * (aryY[2] - aryY[1] - $AryR[2] / 6.0))
+	elsif x > IWINDO
+		rtn = aryY[IWINDO] + (x - IWINDO) * (aryY[IWINDO] - aryY[IWINDO - 1] + $AryR[IWINDO - 1] / 6.0)
+	else
+		i1 = x.floor
+		i2 = x - i1
+			y1 = aryY[i1 + 1].to_f
+			y2 = aryY[i1].to_f
+			r1 = $AryR[i1 + 1].to_f
+			r2 = $AryR[i1].to_f
+		rtn = y2 + i2 * ((y1 - y2 - r2 / 3 - r1 / 6) + i2 * (r2 / 2 + i2 * (r1 - r2) / 6))
 	end
+
 	return rtn
-end
-
-def IFRAC(r)
-	return r.floor
-end
-
-def HashKeyMake(i1, i2)
-	return i1.to_s << "-" << i2.to_s
 end
 
 def Line2Ary(ln)
 	# Fixed length | TSV | CSV
-	return ln.strip.split(/\s+|,/)
+	return ln.split(/\s+|,/)
 end
 
 def GrdF_read(grdFn)
-	print "\e[0;93m"
-	puts "                   << Loading a Grid File >>                    "
-	print "\e[0;96m"
-	puts "0%                            50%                           100%"
-	puts "+-----------------------------+-----------------------------+-  "
-	print "\e[0;94m"
-	print "*"
+	print "\e[0;93m Loading a Grid File...\r"
 
-	iArrow = 0
-
-	# Header [0 .. 5]
-	# Data   [0 .. 1440]
-	ary = []
-
-	aryGrd = IO.binread(grdFn).split("\n")
+	# Header [0..5]    # 6
+	# Data   [0..1440] # 1441
+	aryGrd = File.binread(grdFn).split("\n").map(&:strip)
 
 	#---------
 	# Header
 	#---------
-	cnt = 0
-	ary = Line2Ary(aryGrd[cnt]).map do
-		|s|
-		s.to_f
-	end
-		$South, $North, $West, $East, $Dphi, $Dlam = ary
-	ary = []
+	$South, $North, $West, $East, $Dphi, $Dlam = Line2Ary(aryGrd[0])[0..5].map(&:to_f)
 
 	#-----------------------------
 	# Data Array 1441 * Line 721
@@ -283,7 +265,6 @@ def GrdF_read(grdFn)
 	j3 = NLON - j1      # 1445
 
 	$HashH = {}
-	str = ""
 	i2 = 0
 	cnt = 1
 	while cnt < aryGrd.size
@@ -292,7 +273,7 @@ def GrdF_read(grdFn)
 		#
 		ary = Line2Ary(aryGrd[cnt])
 		#
-		# [5 .. 1445]
+		# [5..1445]
 		#
 		i3 = 1
 		while i3 <= NLON_NBDR
@@ -301,8 +282,8 @@ def GrdF_read(grdFn)
 			i3 += 1
 		end
 		#
-		# [1 .. 4]
-		# [1446 .. 1449]
+		# [1..4]
+		# [1446..1449]
 		#
 		i3 = 1
 		while i3 <= j1
@@ -313,42 +294,25 @@ def GrdF_read(grdFn)
 			i3 += 1
 		end
 
-		if (iArrow += 1) == 12
-			iArrow = 0
-			print "=>\b"
-		end
-
-		ary = []
 		i2 += 1
 		cnt += 1
 	end
-
-	aryGrd = []
-
-	print "\e[0;99m"
-	print "\n"
 end
 
 def main()
-	$BgnTime = Time.new
-
 	ARGV.each do
 		|s|
-		case s
-			when /^-g=/
-				$IFN["Grid File"] = s.split("=")[1]
-
-			when /^-i=/
-				$IFN["Input File"] = s.split("=")[1]
-
-			when /^-o=/
-				$OFN["Output File"] = s.split("=")[1]
+		if s =~ /^-g=/
+			$IFN["Grid File"] = s.split("=")[1]
+		elsif s =~ /^-i=/
+			$IFN["Input File"] = s.split("=")[1]
+		elsif s =~ /^-o=/
+			$OFN["Output File"] = s.split("=")[1]
 		end
 	end
 
 	print "\e[0;92m"
-	66.times{print "-"}
-	puts
+	puts $LN66
 	printf(
 		"> %s -g=\"%s\" -i=\"%s\" -o=\"%s\"\n",
 		File.basename($0),
@@ -356,9 +320,8 @@ def main()
 		$IFN["Input File"],
 		$OFN["Output File"]
 	)
-	66.times{print "-"}
-	print "\e[0;99m"
-	puts
+	puts $LN66
+	print "\e[0;96m"
 
 	iErr = 0
 
@@ -369,7 +332,7 @@ def main()
 		if File.exist?(value)
 			s = "ok"
 		else
-			s = "\e[0;91mNG\e[0;99m"
+			s = "\e[0;91mNG\e[0;96m"
 			iErr = 1
 		end
 		printf("[%s] %-11s : '%s'\n", s, key, value)
@@ -382,25 +345,15 @@ def main()
 	end
 
 	if iErr > 0
-		puts
 		puts "\e[0;91mExit on error.\e[0;99m"
 		puts
 		exit
 	end
-	puts
-
-	#---------
-	# String
-	#---------
-	xmin = -50
-	xmax =  50
-	rdx  =   2
 
 	GrdF_read($IFN["Grid File"])
 
 	print "\e[0;92m"
-	62.times{print "-"}
-	puts
+	puts $LN66
 
 	rtn = ""
 
@@ -410,17 +363,13 @@ def main()
 			|ln|
 			ln.strip!
 			if ln.size > 0
-				ary = Line2Ary(ln).map do
-					|s|
-					s.to_f
-				end
-				flat, flon = ary
-
-				un = INTERP(12.0, flat, flon)
-
-				## rtn << sprintf("%.7f\t%.7f\t%.3f", flat, flon, un)
-				rtn << sprintf("%14.7f%14.7f%12.3f", flat, flon, un)
-				rtn << "\n"
+				flat, flon = Line2Ary(ln)[0..1].map(&:to_f)
+				rtn << sprintf(
+					"%14.7f%14.7f%12.3f\n",
+					flat,
+					flon,
+					INTERP(12.0, flat, flon)
+				)
 			end
 		end
 	end
@@ -431,14 +380,8 @@ def main()
 		print rtn
 	end
 
-	62.times{print "-"}
-	print "\e[0;99m"
-	puts
-
-	printf("%.3fsec\n", Time.new - $BgnTime)
-	puts
+	puts $LN66
+	puts "\e[0;99m"
 end
 
 main()
-
-exit
