@@ -316,7 +316,9 @@ def main()
 
 	# Compatible with Ruby 1.8.7
 	# Enable escape sequence
-	system "cls"
+	if ! system "cls"
+		system "clear"
+	end
 
 	print "\e[0;92m"
 	puts $LN66
