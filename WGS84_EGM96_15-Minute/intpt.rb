@@ -1,8 +1,9 @@
 #!ruby
 #coding:utf-8
 
-$VERSION = "iwm20210518"
+$VERSION = "iwm20210520"
 # <<History>>
+#   iwm20210520
 #   iwm20210518
 #   iwm20210511
 #   iwm20210504
@@ -250,7 +251,9 @@ def GrdF_read(grdFn)
 
 	# Header [0..5]    # 6
 	# Data   [0..1440] # 1441
-	aryGrd = File.binread(grdFn).split("\n").map(&:strip)
+
+	# Compatible with Ruby 1.8.7
+	aryGrd = File.open(grdFn, "rb").read.split("\n").map(&:strip)
 
 	#---------
 	# Header
@@ -310,6 +313,10 @@ def main()
 			$OFN["Output File"] = s.split("=")[1]
 		end
 	end
+
+	# Compatible with Ruby 1.8.7
+	# Enable escape sequence
+	system "cls"
 
 	print "\e[0;92m"
 	puts $LN66
