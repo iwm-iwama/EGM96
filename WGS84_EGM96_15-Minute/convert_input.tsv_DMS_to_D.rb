@@ -1,7 +1,10 @@
-#!ruby
+#!/usr/bin/env ruby
 #coding:binary
 
-$VERSION = ["iwm20200204"]
+$VERSION = "iwm20200204"
+# <<History>>
+#   iwm20200204
+
 #-------------------------------------------------------------------------------
 # Ruby Script 'convert_input_DMS_to_D.rb'
 #   Convert

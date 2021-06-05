@@ -1,8 +1,9 @@
-#!ruby
+#!/usr/bin/env ruby
 #coding:utf-8
 
-$VERSION = "iwm20210520"
+$VERSION = "iwm20210605"
 # <<History>>
+#   iwm20210605
 #   iwm20210520
 #   iwm20210518
 #   iwm20210511
@@ -13,13 +14,13 @@ $VERSION = "iwm20210520"
 
 #-------------------------------------------------------------------------------
 # This Ruby script, intpt.rb, was written based on a FORTRAN program, INTPT.F,
-#   and by Yoshiyuki Iwama(iwm-iwama), August, 2004 and May, 2021.
+#   and by Yoshiyuki Iwama(iwm-iwama), August, 2004 and June, 2021.
 #
 # The program, INTPT.F, was provided by Professor Richard H. Rapp of The Ohio
 #   State University, December, 1996.
 #   It was put into its present form by the National Imagery and Mapping Agency
 #   (NIMA), December, 1996.
-#       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/egm96.html
+#       https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84
 #
 #-------------------------------------------------------------------------------
 # Ruby Script 'intpt.rb'
@@ -372,12 +373,14 @@ def main()
 			|ln|
 			ln.strip!
 			if ln.size > 0
-				flat, flon = Line2Ary(ln)[0..1].map(&:to_f)
+				a1 = Line2Ary(ln)
+				flat, flon = a1[0..1].map(&:to_f)
 				rtn << sprintf(
-					"%14.7f%14.7f%12.3f\n",
+					"%14.7f%14.7f%12.3f  %s\n",
 					flat,
 					flon,
-					INTERP(12.0, flat, flon)
+					INTERP(12.0, flat, flon),
+					a1[2]
 				)
 			end
 		end

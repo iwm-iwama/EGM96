@@ -1,7 +1,11 @@
-#!ruby
+#!/usr/bin/env ruby
 #coding:binary
 
-$VERSION = ["iwm20200206", "iwm20200202"]
+$VERSION = "iwm20200206"
+# <<History>>
+#   iwm20200206
+#   iwm20200202
+
 #-------------------------------------------------------------------------------
 # Ruby Script 'convert_WW15MGH.GRD_to_TSV.rb'
 #   Convert
