@@ -374,7 +374,7 @@ def main()
 			ln.strip!
 			if ln.size > 0
 				a1 = Line2Ary(ln)
-				flat, flon = a1[0..1].map(&:to_f)
+				flat, flon = a1[0].to_f, a1[1].to_f
 				rtn << sprintf(
 					"%14.7f%14.7f%12.3f  %s\n",
 					flat,
