@@ -376,12 +376,12 @@ def main()
 				a1 = Line2Ary(ln)
 				flat, flon = a1[0].to_f, a1[1].to_f
 				rtn << sprintf(
-					"%14.7f%14.7f%12.3f  %s\n",
+					"%14.7f%14.7f%12.3f",
 					flat,
 					flon,
-					INTERP(12.0, flat, flon),
-					a1[2]
+					INTERP(12.0, flat, flon)
 				)
+				rtn << (a1[2] ? "  #{a1[2]}\n" : "\n")
 			end
 		end
 	end
