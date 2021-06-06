@@ -1,16 +1,12 @@
 #!/usr/bin/env ruby
 #coding:utf-8
 
-$VERSION = "iwm20210605"
+$VERSION = "iwm20210606"
 # <<History>>
-#   iwm20210605
-#   iwm20210520
-#   iwm20210518
-#   iwm20210511
-#   iwm20210504
-#   iwm20200206
-#   iwm20200202
-#   iwm20040819
+#   iwm20210606 Support TSV only.
+#   iwm20210520 Support Fixed length, TSV, CSV.
+#   iwm20200206 Support TSV only.
+#   iwm20040819 Support Fixed length, TSV, CSV.
 
 #-------------------------------------------------------------------------------
 # This Ruby script, intpt.rb, was written based on a FORTRAN program, INTPT.F,
@@ -34,41 +30,36 @@ $VERSION = "iwm20210605"
 #   > ruby intpt.rb
 #
 # <<Option example>>
-#   > ruby intpt.rb -g="ww15mgh.grd.tsv" -i="input.dat" -o="outintpt.dat"
+#   > ruby intpt.rb -g="ww15mgh.grd.tsv" -i="input.tsv" -o="outintpt.tsv"
 #
 #-------------------------------------------------------------------------------
 # <<File Information>>
+#   Input and Output data formats support TSV(Tab Separated Value).
 #
-#   1.FORTRAN Program INTPT.F
-#       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/intpt.f
+#   <<Example>>
+#     1.Input data
+#       Latitude	Longitude	Remarks
+#         38.628155	269.779155
+#        -14.621217	305.021114
+#        -90.000000	360.000000
+#         35.360555	138.727222	Mt.Fuji seismograph
 #
-#   2.Geoid Height File (Fixed length | TSV | CSV)
-#       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/ww15mgh.grd.z
-#
-#   3.Test Input Data (Fixed length | TSV | CSV)
-#       https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/input.dat
-#
-#       <<Example>> Fixed length
-#           Latitude    Longitude
-#              38.628155  269.779155
-#             -14.621217  305.021114
-#             -90.000000  360.000000
-#
-#   4.Test Output Data (Fixed length Only)
-#           Latitude      Longitude
-#               38.6281550   269.7791550     -31.628
-#              -14.6212170   305.0211140      -2.969
-#              -90.0000000   360.0000000  999999.000
+#     2.Output data
+#       Latitude	Longitude	Elevation(m)	Remarks
+#         38.628155	269.779155	-31.628
+#        -14.621217	305.021114	-2.969
+#        -90.000000	360.000000	999999.000
+#         35.360555	138.727222	41.300	Mt.Fuji seismograph
 #
 #-------------------------------------------------------------------------------
 
 $IFN = {
 	"Grid File"   => "ww15mgh.grd.tsv",
-	"Input File"  => "input.dat"
+	"Input File"  => "input.tsv"
 }
 
 $OFN = {
-	"Output File" => "outintpt.dat"
+	"Output File" => "outintpt.tsv"
 }
 
 $LN66 = "------------------------------------------------------------------"
@@ -243,12 +234,15 @@ def SPLINE(x, aryY)
 end
 
 def Line2Ary(ln)
-	# Fixed length | TSV | CSV
-	return ln.split(/\s+|,/)
+	# TSV
+	return ln.split("\t")
+
+	## TSV | Fixed | CSV
+	#  return ln.split(/\s+|,/)
 end
 
 def GrdF_read(grdFn)
-	print "\e[0;93m Loading a Grid File...\r"
+	puts "\e[0;93mLoading a Grid File..."
 
 	# Header [0..5]    # 6
 	# Data   [0..1440] # 1441
@@ -356,44 +350,52 @@ def main()
 
 	if iErr > 0
 		puts "\e[0;91mExit on error.\e[0;99m"
-		puts
 		exit
 	end
 
 	GrdF_read($IFN["Grid File"])
 
-	print "\e[0;92m"
-	puts $LN66
-
 	rtn = ""
+	outputCnt = 0
 
 	File.open($IFN["Input File"], "rb") do
 		|fs|
-		fs.each_line do
+		fs.read.split("\n") do
 			|ln|
 			ln.strip!
+
 			if ln.size > 0
 				a1 = Line2Ary(ln)
 				flat, flon = a1[0].to_f, a1[1].to_f
-				rtn << sprintf(
-					"%14.7f%14.7f%12.3f",
-					flat,
-					flon,
-					INTERP(12.0, flat, flon)
-				)
-				rtn << (a1[2] ? "  #{a1[2]}\n" : "\n")
+				m = INTERP(12.0, flat, flon)
+
+				# TSV
+				rtn << "#{flat}\t#{flon}\t#{m.floor(3)}"
+				rtn << (a1[2] ? "\t#{a1[2]}\n" : "\n")
+
+				## Fixed
+				# rtn << sprintf(
+				# 	"%14.7f%14.7f%12.3f",
+				# 	flat,
+				# 	flon,
+				# 	INTERP(12.0, flat, flon)
+				# )
+				# rtn << (a1[2] ? "  #{a1[2]}\n" : "\n")
+
+				outputCnt += 1
 			end
 		end
 	end
 
+	print "\e[0;93m"
+	puts "Output > #{outputCnt}"
+
 	File.open($OFN["Output File"], "wb") do
 		|fs|
 		fs.write rtn
-		print rtn
 	end
 
-	puts $LN66
-	puts "\e[0;99m"
+	print "\e[0;99m"
 end
 
 main()

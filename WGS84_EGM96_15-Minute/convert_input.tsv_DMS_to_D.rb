@@ -1,32 +1,28 @@
 #!/usr/bin/env ruby
 #coding:binary
 
-$VERSION = "iwm20200204"
+$VERSION = "iwm20210606"
 # <<History>>
+#   iwm20210606
 #   iwm20200204
 
 #-------------------------------------------------------------------------------
-# Ruby Script 'convert_input_DMS_to_D.rb'
-#   Convert
-#       ("%02d%02d%010.7f", deg, min, sec)
-#           Latitude	Longitude
-#           383741.358000	2694644.958000
-#           -143716.381200	3050116.010400
-#           465227.548400	1022655.424400
-#   To
-#       decimal degrees
-#           Latitude	Longitude
-#           38.628155	269.779155
-#           -14.621217	305.021114
-#           46.874319	102.448729
+# Convert
+#   ("%02d%02d%010.7f", deg, min, sec)
+#     Latitude	Longitude
+#       383741.358000	2694644.958000
+#      -143716.381200	3050116.010400
+#       465227.548400	1022655.424400
+# To
+#   decimal degrees
+#     Latitude	Longitude
+#       38.628155	269.779155
+#      -14.621217	305.021114
+#       46.874319	102.448729
 #
 # <<Environment>>
 #   This script executing needs 'Ruby'.
 #       http://www.ruby-lang.org/
-#
-# <<Execute>>
-#   ex1 > ruby convert_input.tsv_DMS_to_D.rb "Input file"
-#   ex2 > ruby convert_input.tsv_DMS_to_D.rb "Input file" > "Output file"
 #
 #-------------------------------------------------------------------------------
 
@@ -77,12 +73,11 @@ def main()
 		|fs|
 		fs.each_line do
 			|ln|
-			lat, lng = ln.strip.split("\t")
-			printf("%f\t%f\n", rtnGeoIBLto10B(lat), rtnGeoIBLto10B(lng))
+			lat, lng, remarks = ln.strip.split("\t")
+			printf("%.6f\t%.6f", rtnGeoIBLto10B(lat), rtnGeoIBLto10B(lng))
+			print (remarks ? "\t#{remarks}\n" : "\n")
 		end
 	end
 end
 
 main()
-
-exit

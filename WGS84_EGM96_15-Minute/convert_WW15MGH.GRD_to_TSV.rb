@@ -1,25 +1,22 @@
 #!/usr/bin/env ruby
 #coding:binary
 
-$VERSION = "iwm20200206"
+$VERSION = "iwm20210606"
 # <<History>>
+#   iwm20210606
 #   iwm20200206
 #   iwm20200202
 
 #-------------------------------------------------------------------------------
-# Ruby Script 'convert_WW15MGH.GRD_to_TSV.rb'
-#   Convert
-#       'WW15MGH.GRD' of the WGS 84 EGM96 15-Minute Geoid Height File,
-#         https://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/ww15mgh.grd.z
-#   To
-#       'ww15mgh.grd.tsv' of TSV format
+# Convert
+#   'WW15MGH.GRD' of the WGS 84 EGM96 15-Minute Geoid Height File,
+#       https://earth-info.nga.mil/php/download.php?file=egm-96interpolation
+# To
+#   'ww15mgh.grd.tsv' of TSV format
 #
 # <<Environment>>
 #   This script executing needs 'Ruby'.
 #       http://www.ruby-lang.org/
-#
-# <<Execute>>
-#   > ruby convert_WW15MGH.GRD_to_TSV.rb
 #
 #-------------------------------------------------------------------------------
 
@@ -97,4 +94,3 @@ File.open($OFN, "wb") do
 end
 
 puts
-exit
