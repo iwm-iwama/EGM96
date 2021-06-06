@@ -62,7 +62,7 @@ $OFN = {
 	"Output File" => "outintpt.tsv"
 }
 
-$LN66 = "------------------------------------------------------------------"
+$LN72 = "------------------------------------------------------------------------"
 
 #-------------------------------------------------------------------------------
 
@@ -238,7 +238,7 @@ def Line2Ary(ln)
 	return ln.split("\t")
 
 	## TSV | Fixed | CSV
-	#  return ln.split(/\s+|,/)
+	#	return ln.split(/\s+|,/)
 end
 
 def GrdF_read(grdFn)
@@ -247,8 +247,8 @@ def GrdF_read(grdFn)
 	# Header [0..5]    # 6
 	# Data   [0..1440] # 1441
 
-	# Compatible with Ruby 1.8.7
-	aryGrd = File.open(grdFn, "rb").read.split("\n").map(&:strip)
+	# lstrip(Remove leading whitespace)
+	aryGrd = File.binread(grdFn).split("\n").map(&:lstrip)
 
 	#---------
 	# Header
@@ -309,14 +309,13 @@ def main()
 		end
 	end
 
-	# Compatible with Ruby 1.8.7
-	# Enable escape sequence
+	# Clear screen
 	if ! system "cls"
 		system "clear"
 	end
 
 	print "\e[0;92m"
-	puts $LN66
+	puts $LN72
 	printf(
 		"> %s -g=\"%s\" -i=\"%s\" -o=\"%s\"\n",
 		File.basename($0),
@@ -324,7 +323,7 @@ def main()
 		$IFN["Input File"],
 		$OFN["Output File"]
 	)
-	puts $LN66
+	puts $LN72
 	print "\e[0;96m"
 
 	iErr = 0
@@ -374,13 +373,13 @@ def main()
 				rtn << (a1[2] ? "\t#{a1[2]}\n" : "\n")
 
 				## Fixed
-				# rtn << sprintf(
-				# 	"%14.7f%14.7f%12.3f",
-				# 	flat,
-				# 	flon,
-				# 	INTERP(12.0, flat, flon)
-				# )
-				# rtn << (a1[2] ? "  #{a1[2]}\n" : "\n")
+				#	rtn << sprintf(
+				#		"%14.7f%14.7f%12.3f",
+				#		flat,
+				#		flon,
+				#		INTERP(12.0, flat, flon)
+				#	)
+				#	rtn << (a1[2] ? "  #{a1[2]}\n" : "\n")
 
 				outputCnt += 1
 			end
