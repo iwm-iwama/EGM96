@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 #coding:utf-8
 
-$VERSION = "iwm20210606"
+$VERSION = "iwm20210711"
 # <<History>>
-#   iwm20210606 Support TSV only.
+#   iwm20210606/20210711 Support TSV only.
 #   iwm20210520 Support Fixed length, TSV, CSV.
 #   iwm20200206 Support TSV only.
 #   iwm20040819 Support Fixed length, TSV, CSV.
@@ -310,9 +310,7 @@ def main()
 	end
 
 	# Clear screen
-	if ! system "cls"
-		system "clear"
-	end
+	system "cls || clear"
 
 	print "\e[0;92m"
 	puts $LN72
