@@ -1,9 +1,12 @@
 #!/usr/bin/env ruby
 #coding:utf-8
 
-$VERSION = "iwm20210711"
+VERSION = "iwm20230907"
+
 # <<History>>
-#   iwm20210606/20210711 Support TSV only.
+#   iwm20230907 Re-coding.
+#   iwm20210711 Re-coding.
+#   iwm20210606 Support TSV only.
 #   iwm20210520 Support Fixed length, TSV, CSV.
 #   iwm20200206 Support TSV only.
 #   iwm20040819 Support Fixed length, TSV, CSV.
@@ -19,11 +22,11 @@ $VERSION = "iwm20210711"
 #       https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84
 #
 #-------------------------------------------------------------------------------
-# Ruby Script 'intpt.rb'
+# Ruby Script "intpt.rb"
 #   WGS 84 EGM96 15-Minute Calculator
 #
 # <<Environment>>
-#   This script executing needs 'Ruby'.
+#   This script executing needs "Ruby".
 #       http://www.ruby-lang.org/
 #
 # <<Execute>>
@@ -62,14 +65,24 @@ $OFN = {
 	"Output File" => "outintpt.tsv"
 }
 
-$LN72 = "------------------------------------------------------------------------"
-
 #-------------------------------------------------------------------------------
 
 # Speed Up!!
 GC.disable
 
+class Terminal
+	def clear()
+		print "\033[2J\033[1;1H"
+	end
+
+	def reset()
+		print "\033[0m"
+	end
+end
+Term = Terminal.new()
+
 Signal.trap(:INT) do
+	Term.reset()
 	exit
 end
 
@@ -242,8 +255,6 @@ def Line2Ary(ln)
 end
 
 def GrdF_read(grdFn)
-	puts "\e[0;93mLoading a Grid File..."
-
 	# Header [0..5]    # 6
 	# Data   [0..1440] # 1441
 
@@ -298,8 +309,7 @@ def GrdF_read(grdFn)
 end
 
 def main()
-	ARGV.each do
-		|s|
+	ARGV.each do |s|
 		if s =~ /^-g=/
 			$IFN["Grid File"] = s.split("=")[1]
 		elsif s =~ /^-i=/
@@ -309,44 +319,56 @@ def main()
 		end
 	end
 
-	# Clear screen
-	system "cls || clear"
+	Term.clear()
 
-	print "\e[0;92m"
-	puts $LN72
+	print "\033[92m"
 	printf(
-		"> %s -g=\"%s\" -i=\"%s\" -o=\"%s\"\n",
+		"$ %s -g=\"%s\" -i=\"%s\" -o=\"%s\"\n\n",
 		File.basename($0),
 		$IFN["Grid File"],
 		$IFN["Input File"],
 		$OFN["Output File"]
 	)
-	puts $LN72
-	print "\e[0;96m"
 
-	iErr = 0
+	bErr = false
 
 	# Input File, "ok" "NG"
-	$IFN.each do
-		|key, value|
+	$IFN.each do |key, value|
 		s = ""
+
 		if File.exist?(value)
-			s = "ok"
+			s = "\033[96m[ok]"
 		else
-			s = "\e[0;91mNG\e[0;96m"
-			iErr = 1
+			s = "\033[91m[NG]"
+			bErr = true
 		end
-		printf("[%s] %-11s : '%s'\n", s, key, value)
+
+		printf(
+			"%s %-11s '%s'\n",
+			s,
+			key,
+			value
+		)
 	end
 
 	# Output File, All "ok"
-	$OFN.each do
-		|key, value|
-		printf("[%s] %-11s : '%s'\n", "ok", key, value)
+	print "\033[96m"
+	$OFN.each do |key, value|
+		printf(
+			"[ok] %-11s '%s'\n",
+			key,
+			value
+		)
 	end
 
-	if iErr > 0
-		puts "\e[0;91mExit on error.\e[0;99m"
+	puts
+
+	if bErr
+		puts(
+			"\033[91m" +
+			"Exit on Error!"
+		)
+		Term.reset()
 		exit
 	end
 
@@ -355,10 +377,8 @@ def main()
 	rtn = ""
 	outputCnt = 0
 
-	File.open($IFN["Input File"], "rb") do
-		|fs|
-		fs.read.split("\n") do
-			|ln|
+	File.open($IFN["Input File"], "rb") do |fs|
+		fs.read.split("\n") do |ln|
 			ln.strip!
 
 			if ln.size > 0
@@ -384,15 +404,17 @@ def main()
 		end
 	end
 
-	print "\e[0;93m"
-	puts "Output > #{outputCnt}"
+	puts(
+		"\033[93m" +
+		"Output " +
+		outputCnt.to_s
+	)
 
-	File.open($OFN["Output File"], "wb") do
-		|fs|
+	File.open($OFN["Output File"], "wb") do |fs|
 		fs.write rtn
 	end
 
-	print "\e[0;99m"
+	Term.reset()
 end
 
 main()
